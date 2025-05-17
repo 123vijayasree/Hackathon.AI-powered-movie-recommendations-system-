@@ -1,0 +1,22 @@
+📥System Requirements:
+
+💽Software Requirements:
+
+	Python 3.7 or above
+
+	Node.js and npm
+
+	MongoDB or Firebase for database
+
+	scikit-learn, pandas, NumPy (for ML models)
+
+	React (for frontend) 
+
+	Express.js (for backend API)
+
+📋Hardware Requirements:
+
+	4 GB RAM (minimum)
+
+	2 GHz processor or better stable internet connection for API requests and deployment
+
