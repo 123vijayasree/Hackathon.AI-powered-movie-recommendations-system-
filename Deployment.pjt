@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+
+<html lang="en" >
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>AI-Powered Movie Recommender</title>
+
+  <style>
+
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap');
+
+    /* Reset and base */
+
+    * {
+
+      box-sizing: border-box;
+
+    }
+
+    body {
+
+      margin: 0; min-height: 100vh;
+
+      font-family: 'Montserrat', sans-serif;
+
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+
+      color: #e1eaf4;
+
+      display: flex;
+
+      flex-direction: column;
+
+      align-items: center;
+
+      padding: 40px 20px;
+
+      overflow-x: hidden;
+
+    }
+
+    header {
+
+      font-size: 3.2rem;
+
+      font-weight: 700;
+
+      letter-spacing: 0.08em;
+
+      text-transform: uppercase;
+
+      margin-bottom: 10px;
+
+      user-select: none;
+
+      text-shadow: 0 4px 12px rgba(0,0,0,0.5);
+
+    }
+
+    .description {
+
+      font-weight: 300;
+
+      font-size: 1.25rem;
+
+      color: #a6c8e0dd;
+
+      max-width: 480px;
+
+      text-align: center;
+
+      margin-bottom: 40px;
+
+      user-select: none;
+
+      line-height: 1.5;
+
+    }
+
+    .input-area {
+
+      width: 100%;
+
+      max-width: 540px;
+
+      background: rgba(255,255,255,0.1);
+
+      border-radius: 16px;
+
+      padding: 28px 36px;
+
+      box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 18px;
+
+      backdrop-filter: blur(10px);
+
+    }
+
+    label {
+
+      font-weight: 600;
+
+      font-size: 1.1rem;
+
+      color: #dbe9f4;
+
+      user-select: none;
+
+    }
+
+    input[type="text"] {
+
+      font-size: 1rem;
+
+      padding: 14px 20px;
+
+      border-radius: 12px;
+
+      border: none;
+
+      outline: none;
+
+      background: rgba(255,255,255,0.12);
+
+      color: #e0e7f1;
+
+      transition: box-shadow 0.25s ease;
+
+      font-weight: 500;
+
+    }
+
+    input[type="text"]::placeholder {
+
+      color: #abb7c8aa;
+
+      font-style: italic;
+
+    }
+
+    input[type="text"]:focus {
+
+      box-shadow: 0 0 12px #78d5f8;
+
+      background: rgba(255,255,255,0.2);
+
+      color: #fff;
+
+    }
+
+    button {
+
+      margin-top: 10px;
+
+      padding: 16px 0;
+
+      background: #50b7f5;
+
+      border: none;
+
+      border-radius: 14px;
+
+      box-shadow: 0 6px 25px #50b7f5aa;
+
+      font-weight: 700;
+
+      font-size: 1.25rem;
+
+      color: #0a1d37;
+
+      cursor: pointer;
+
+      transition: background-color 0.3s ease;
+
+      user-select: none;
+
+    }
+
+    button:hover, button:focus {
+
+      background: #3996df;
+
+      outline: none;
+
+    }
+
+    main {
+
+      margin-top: 48px;
+
+      width: 100%;
+
+      max-width: 960px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 30px;
+
+    }
+
+    .result-header {
+
+      font-size: 1.6rem;
+
+      font-weight: 700;
+
+      color: #99cfffcc;
+
+      user-select: none;
+
+    }
+
+    .result-count {
+
+      font-weight: 400;
+
+      color: #87bbf7cc;
+
+      margin-left: 8px;
+
+      font-size: 1.1rem;
+
+    }
+
+    .movie-grid {
+
+      display: grid;
+
+      grid-template-columns: repeat(auto-fill,minmax(180px,1fr));
+
+      gap: 28px;
+
+    }
+
+    .movie-card {
+
+      background: rgba(40,73,103,0.9);
+
+      border-radius: 20px;
+
+      box-shadow: 0 8px 24px rgba(0,65,130,0.6);
+
+      display: flex;
+
+      flex-direction: column;
+
+      overflow: hidden;
+
+      transform: translateY(30px);
+
+      opacity: 0;
+
+      animation-fill-mode: forwards;
+
+      animation-name: fadeSlideIn;
+
+      animation-duration: 0.45s;
+
+      animation-timing-function: cubic-bezier(0.4,0,0.2,1);
+
+      cursor: pointer;
+
+      transition: transform 0.25s ease;
+
+      user-select: none;
+
+    }
+
+    .movie-card:hover {
+
+      transform: translateY(10px) scale(1.06);
+
+      box-shadow: 0 12px 40px rgba(0,90,175,0.9);
+
+    }
+
+    @keyframes fadeSlideIn {
+
+      to {
+
+        transform: translateY(0);
+
+        opacity: 1;
+
+      }
+
+    }
+
+    .movie-poster {
+
+      aspect-ratio: 2 / 3;
+
+      width: 100%;
+
+      object-fit: cover;
+
+      border-top-left-radius: 20px;
+
+      border-top-right-radius: 20px;
+
+      box-shadow: inset 0 -20px 30px -10px rgba(0,0,0,0.8);
+
+    }
+
+    .movie-info {
+
+      padding: 14px 18px 22px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 6px;
+
+      flex-grow: 1;
+
+    }
+
+    .movie-title {
+
+      font-weight: 700;
+
+      font-size: 1.1rem;
+
+      color: #badcff;
+
+      text-shadow: 0 1px 2px #837d85;
+
+      user-select: text;
+
+      overflow-wrap: anywhere;
+
+    }
+
+    .movie-genres {
+
+      font-size: 0.85rem;
+
+      font-weight: 500;
+
+      color: #83a7ce;
+
+      letter-spacing: 0.06em;
+
+      font-style: italic;
+
+      user-select: text;
+
+    }
+
+    footer {
+
+      margin-top: auto;
+
+      font-size: 0.85rem;
+
+      text-align: center;
+
+      color: #6499cbaa;
+
+      user-select: none;
+
+      padding-bottom: 20px;
+
+      letter-spacing: 0.04em;
+
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  <header>AI-Powdered Movie Recommender</header>
+
+  <div class="description">Share your favorite movies or genres below, separated by commas — then get fresh, AI-inspired recommendations tailored just for you.</div>
+
+  <section class="input-area">
+
+    <label for="inputMovies">Your favorite movies or genres</label>
+
+    <input type="text" id="inputMovies" placeholder="e.g. Avengers, sci-fi, drama, inception" autocomplete="off" />
+
+    <button id="btnRecommend">Show Recommendations</button>
+
+  </section>
+
+  <main>
+
+    <div class="result-header" id="resultHeader" style="display:none;">
+
+      Recommended Movies
+
+      <span class="result-count" id="resultCount"></span>
+
+    </div>
+
+    <div class="movie-grid" id="movieGrid" aria-live="polite" aria-atomic="true"></div>
+
+  </main>
+
+  <footer>© 2024 AI-Powdered Movie Recommender System</footer>
+
+
+
+  <script>
+
+    const movies = [
+
+      {
+
+        title: "Inception",
+
+        genres: ["Sci-Fi", "Thriller", "Action"],
+
+        poster: "https://image.tmdb.org/t/p/w342/qmDpIHrmpJINaRKAfWQfftjCdyi.jpg"
+
+      },
+
+      {
+
+        title: "The Dark Knight",
+
+        genres: ["Action", "Crime", "Drama"],
+
+        poster: "https://image.tmdb.org/t/p/w342/qJ2tW6WMUDux911r6m7haRef0WH.jpg"
+
+      },
+
+      {
+
+        title: "Interstellar",
+
+        genres: ["Sci-Fi", "Drama", "Adventure"],
+
+        poster: "https://image.tmdb.org/t/p/w342/rAiYTfKGqDCRIIqo664sY9XZIvQ.jpg"
+
+      },
+
+      {
+
+        title: "The Matrix",
+
+        genres: ["Sci-Fi", "Action"],
+
+        poster: "https://image.tmdb.org/t/p/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+
+      },
+
+      {
+
+        title: "Forrest Gump",
+
+        genres: ["Drama", "Romance"],
+
+        poster: "https://image.tmdb.org/t/p/w342/yE5d3BUhE8hCnkMUJOo1QDoOGNz.jpg"
+
+      },
+
+      {
+
+        title: "The Shawshank Redemption",
+
+        genres: ["Drama", "Crime"],
+
+        poster: "https://image.tmdb.org/t/p/w342/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg"
+
+      },
+
+      {
+
+        title: "Pulp Fiction",
+
+        genres: ["Crime", "Drama"],
+
+        poster: "https://image.tmdb.org/t/p/w342/dM2w364MScsjFf8pfMbaWUcWrR.jpg"
+
+      },
+
+      {
+
+        title: "Avengers: Endgame",
+
+        genres: ["Action", "Adventure", "Sci-Fi"],
+
+        poster: "https://image.tmdb.org/t/p/w342/or06FN3Dka5tukK1e9sl16pB3iy.jpg"
+
+      },
+
+      {
+
+        title: "Gladiator",
+
+        genres: ["Action", "Drama", "Adventure"],
+
+        poster: "https://image.tmdb.org/t/p/w342/ty8TGRuvJLPUmAR1H1nRIsgwvim.jpg"
+
+      },
+
+      {
+
+        title: "La La Land",
+
+        genres: ["Drama", "Romance", "Musical"],
+
+        poster: "https://image.tmdb.org/t/p/w342/uDO8zWDhfWwoFdKS4fzkUJt0Rf0.jpg"
+
+      }
+
+    ];
+
+
+
+    function normalizeText(text) {
+
+      return text.toLowerCase().trim();
+
+    }
+
+
+
+    // Compute scores for movies based on matches with user tokens
+
+    function computeScores(input) {
+
+      if(!input) return [];
+
+      const tokens = input.split(',').map(s => normalizeText(s));
+
+
+
+      return movies.map(movie => {
+
+        let score = 0;
+
+        const titleNorm = normalizeText(movie.title);
+
+        const genresNorm = movie.genres.map(normalizeText);
+
+        tokens.forEach(token => {
+
+          if(titleNorm.includes(token)) score += 4;
+
+          if(genresNorm.includes(token)) score += 3;
+
+        });
+
+        return { movie, score };
+
+      }).filter(x => x.score > 0)
+
+        .sort((a, b) => b.score - a.score)
+
+        .map(x => x.movie);
+
+    }
+
+
+
+    // Render movie cards with fade animation staggered
+
+    function renderMovies(moviesList) {
+
+      const movieGrid = document.getElementById('movieGrid');
+
+      const resultHeader = document.getElementById('resultHeader');
+
+      const resultCount = document.getElementById('resultCount');
+
+      movieGrid.innerHTML = '';
+
+
+
+      if(moviesList.length === 0) {
+
+        resultHeader.style.display = 'none';
+
+        return;
+
+      }
+
+
+
+      resultHeader.style.display = 'block';
+
+      resultCount.textContent = `(${moviesList.length})`;
+
+
+
+      moviesList.forEach((movie, i) => {
+
+        const card = document.createElement('div');
+
+        card.classList.add('movie-card');
+
+        card.style.animationDelay = `${i * 100}ms`;
+
+        card.tabIndex = 0;
+
+        card.setAttribute('aria-label', `${movie.title}, genres: ${movie.genres.join(', ')}`);
+
+        card.innerHTML = `
+
+          <img loading="lazy" class="movie-poster" src="${movie.poster}" alt="Poster of ${movie.title}" />
+
+          <div class="movie-info">
+
+            <div class="movie-title">${movie.title}</div>
+
+            <div class="movie-genres">${movie.genres.join(', ')}</div>
+
+          </div>
+
+        `;
+
+        movieGrid.appendChild(card);
+
+      });
+
+    }
+
+
+
+    document.getElementById('btnRecommend').addEventListener('click', () => {
+
+      const input = document.getElementById('inputMovies').value;
+
+      const recommendations = computeScores(input);
+
+      // If none, fallback to top 5 movies
+
+      const finalRecs = recommendations.length > 0 ? recommendations : movies.slice(0, 5);
+
+      renderMovies(finalRecs);
+
+    });
+
+
+
+    // Trigger recommendations on Enter key in input
+
+    document.getElementById('inputMovies').addEventListener('keydown', e => {
+
+      if(e.key === 'Enter') {
+
+        document.getElementById('btnRecommend').click();
+
+      }
+
+    });
+
+  </script>
+
+</body>
+
+</html>
+
+
+
+
+
+
+
+
+
+
