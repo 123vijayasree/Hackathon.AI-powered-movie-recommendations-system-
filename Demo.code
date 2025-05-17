@@ -1,0 +1,152 @@
+import pandas as pd
+
+import numpy as np
+
+from sklearn.metrics.pairwise import cosine_similarity
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+
+
+ratings = pd.read_csv('ratings.csv')
+
+movies = pd.read_csv('movies.csv')
+
+
+
+data = pd.merge(ratings, movies, on='movie_id')
+
+data = data.dropna()
+
+
+
+user_movie_matrix = data.pivot_table(index='user_id', columns='movie_id', values='rating').fillna(0)
+
+
+
+movies['genres'] = movies['genres'].str.replace('|', ' ')
+
+tfidf = TfidfVectorizer(stop_words='english')
+
+tfidf_matrix = tfidf.fit_transform(movies['genres'])
+
+movie_similarity = cosine_similarity(tfidf_matrix, tfidf_matrix)
+
+movie_similarity_df = pd.DataFrame(movie_similarity, index=movies['movie_id'], columns=movies['movie_id'])
+
+
+
+user_similarity = cosine_similarity(user_movie_matrix)
+
+user_similarity_df = pd.DataFrame(user_similarity, index=user_movie_matrix.index, columns=user_movie_matrix.index)
+
+
+
+def generate_recommendations(user_id, user_movie_matrix, user_similarity_df, movie_similarity_df, movies, top_n=5):
+
+    similar_users = user_similarity_df[user_id].sort_values(ascending=False)[1:top_n+1].index
+
+    user_ratings = user_movie_matrix.loc[user_id]
+
+    unrated_movies = user_ratings[user_ratings == 0].index
+
+    
+
+    collab_scores = {}
+
+    for movie in unrated_movies:
+
+        similar_user_ratings = user_movie_matrix.loc[similar_users, movie]
+
+        similarity_scores = user_similarity_df.loc[user_id, similar_users]
+
+        if similarity_scores.sum() > 0:
+
+            collab_scores[movie] = np.sum(similar_user_ratings * similarity_scores) / similarity_scores.sum()
+
+    
+
+    rated_movies = user_ratings[user_ratings > 0].index
+
+    content_scores = {}
+
+    for movie in unrated_movies:
+
+        movie_sim_scores = movie_similarity_df.loc[movie, rated_movies]
+
+        weighted_score = np.sum(movie_sim_scores * user_ratings[rated_movies]) / movie_sim_scores.sum()
+
+        content_scores[movie] = weighted_score if not np.isnan(weighted_score) else 0
+
+    
+
+    combined_scores = {}
+
+    for movie in unrated_movies:
+
+        collab = collab_scores.get(movie, 0)
+
+        content = content_scores.get(movie, 0)
+
+        combined_scores[movie] = 0.6 * collab + 0.4 * content
+
+    
+
+    recommended_movies = sorted(combined_scores.items(), key=lambda x: x[1], reverse=True)[:top_n]
+
+    recommended_movie_ids = [movie_id for movie_id, _ in recommended_movies]
+
+    recommended_titles = movies[movies['movie_id'].isin(recommended_movie_ids)]['title'].tolist()
+
+    return recommended_titles
+
+
+
+def update_user_profile(user_id, movie_id, rating, user_movie_matrix):
+
+    user_movie_matrix.loc[user_id, movie_id] = rating
+
+    return user_movie_matrix
+
+
+
+user_id = 1
+
+recommendations = generate_recommendations(user_id, user_movie_matrix, user_similarity_df, movie_similarity_df, movies)
+
+print(f"Initial Recommendations for User {user_id}:")
+
+for i, title in enumerate(recommendations, 1):
+
+    print(f"{i}. {title}")
+
+
+
+movie_title = recommendations[0]
+
+movie_id = movies[movies['title'] == movie_title]['movie_id'].iloc[0]
+
+new_rating = 4.0
+
+user_movie_matrix = update_user_profile(user_id, movie_id, new_rating, user_movie_matrix)
+
+
+
+user_similarity = cosine_similarity(user_movie_matrix)
+
+user_similarity_df = pd.DataFrame(user_similarity, index=user_movie_matrix.index, columns=user_movie_matrix.index)
+
+
+
+print(f"\nUpdated Recommendations for User {user_id} after feedback:")
+
+updated_recommendations = generate_recommendations(user_id, user_movie_matrix, user_similarity_df, movie_similarity_df, movies)
+
+for i, title in enumerate(updated_recommendations, 1):
+
+    print(f"{i}. {title}")
+
+
+
+
+
